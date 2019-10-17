@@ -257,10 +257,10 @@ function randomInput(weight) {
   return 1;
 }
 
-const SIM_DURATION = 16;
+const SIM_DURATION = 24;
+const SIM_COUNT = 64;
 function search() {
-  let simCount = 32;
-
+  let simCount = SIM_COUNT;
   let results = [];
 
   let anyAlive = false;
