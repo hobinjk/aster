@@ -162,11 +162,15 @@ function draw() {
   let dt = 1;
   let results = search();
   let dTheta = 0.1, thrust = 0;
+  let maxDist = 0;
   for (let result of results) {
-    if (result.alive) {
+    if (result.alive && result.steps.length > maxDist) {
       dTheta = result.dTheta;
       thrust = result.thrust;
-      break;
+      maxDist = result.steps.length;
+      if (maxDist === SIM_DURATION) {
+        break;
+      }
     }
   }
 
@@ -180,6 +184,32 @@ function draw() {
   }
 
   gfx.fillRect(0, 0, width, height);
+
+  for (let result of results) {
+    if (result.alive) {
+      gfx.strokeStyle = 'green';
+    } else {
+      gfx.strokeStyle = 'red';
+    }
+    if (result.steps.length > 1) {
+      gfx.beginPath();
+      let lastX = width / 2;
+      let lastY = height / 2;
+      for (let step of result.steps) {
+        if (Math.abs(step.x - lastX) <= width / 2 &&
+            Math.abs(step.y - lastY) <= height / 2) {
+          gfx.lineTo(step.x, step.y);
+        } else {
+          gfx.moveTo(step.x, step.y);
+        }
+        lastX = step.x;
+        lastY = step.y;
+      }
+      gfx.stroke();
+    }
+    drawPlayer(result.x, result.y, result.theta, false);
+  }
+
   gfx.fillStyle = 'white';
   gfx.strokeStyle = 'white';
 
@@ -191,15 +221,6 @@ function draw() {
     gfx.beginPath();
     gfx.arc(asteroid.x, asteroid.y, asteroid.r, 0, 2 * Math.PI);
     gfx.stroke();
-  }
-
-  for (let result of results) {
-    if (result.alive) {
-      gfx.strokeStyle = 'green';
-    } else {
-      gfx.strokeStyle = 'red';
-    }
-    drawPlayer(result.x, result.y, result.theta, false);
   }
 
   requestAnimationFrame(draw);
@@ -236,9 +257,9 @@ function randomInput(weight) {
   return 1;
 }
 
+const SIM_DURATION = 16;
 function search() {
   let simCount = 32;
-  let simDuration = 16;
 
   let results = [];
 
@@ -247,7 +268,7 @@ function search() {
   for (let i = 0; i < simCount; i++) {
     let inputs = [];
 
-    for (let j = 0; j < simDuration; j++) {
+    for (let j = 0; j < SIM_DURATION; j++) {
       let thrust = 0.1;
       let dTheta = 0.1 * randomInput(i/simCount);
 
@@ -277,10 +298,15 @@ function simulate(basePlayer, baseAsteroids, inputs) {
   let dt = 1;
   let player = basePlayer.clone();
   let asteroids = baseAsteroids.map(ba => ba.clone());
+  let steps = [];
   for (let input of inputs) {
     player.step(dt, input.dTheta, input.thrust);
+    steps.push({
+      x: player.x,
+      y: player.y,
+    });
     for (let asteroid of asteroids) {
-      asteroid.step(dt, input.dTheta, input.thrust);
+      asteroid.step(dt);
     }
     dt += 0.25;
     if (!alive(player, asteroids)) {
@@ -291,6 +317,7 @@ function simulate(basePlayer, baseAsteroids, inputs) {
         theta: player.theta,
         thrust: inputs[0].thrust,
         dTheta: inputs[0].dTheta,
+        steps: steps,
       };
     }
   }
@@ -301,6 +328,7 @@ function simulate(basePlayer, baseAsteroids, inputs) {
     theta: player.theta,
     thrust: inputs[0].thrust,
     dTheta: inputs[0].dTheta,
+    steps: steps,
   };
 }
 
