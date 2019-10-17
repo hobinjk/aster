@@ -196,11 +196,38 @@ function draw() {
       let lastX = width / 2;
       let lastY = height / 2;
       for (let step of result.steps) {
-        if (Math.abs(step.x - lastX) <= width / 2 &&
-            Math.abs(step.y - lastY) <= height / 2) {
+        let wrappedX = Math.abs(step.x - lastX) > width / 2;
+        let wrappedY = Math.abs(step.y - lastY) > height / 2;
+        if (!wrappedX && !wrappedY) {
           gfx.lineTo(step.x, step.y);
         } else {
-          gfx.moveTo(step.x, step.y);
+          let unwrapStepX = step.x;
+          let unwrapStepY = step.y;
+          let unwrapLastX = lastX;
+          let unwrapLastY = lastY;
+
+          if (wrappedX) {
+            if (lastX < width / 2) {
+              unwrapStepX -= width;
+              unwrapLastX += width;
+            } else {
+              unwrapStepX += width;
+              unwrapLastX -= width;
+            }
+          }
+          if (wrappedY) {
+            if (lastY < height / 2) {
+              unwrapStepY -= height;
+              unwrapLastY += height;
+            } else {
+              unwrapStepY += height;
+              unwrapLastY -= height;
+            }
+          }
+
+          gfx.lineTo(unwrapStepX, unwrapStepY);
+          gfx.moveTo(unwrapLastX, unwrapLastY);
+          gfx.lineTo(step.x, step.y);
         }
         lastX = step.x;
         lastY = step.y;
